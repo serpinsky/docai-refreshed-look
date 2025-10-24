@@ -1,15 +1,70 @@
 import { useState } from "react";
-import { Upload, FileText, Sparkles, CheckCircle, Download } from "lucide-react";
+import { Upload, FileText, Sparkles, CheckCircle, Download, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { DocumentList } from "@/components/DocumentList";
+import { Document } from "@/types/document";
 
 const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [documents, setDocuments] = useState<Document[]>([
+    {
+      id: "1",
+      name: "doc_2_page_1.jpg",
+      uploadDate: "2025-10-24T03:48:58",
+      size: 288450,
+      pages: 1,
+      status: "recognized",
+      confidence: 93,
+      text: `Заказ № 1
+к договору № КТТК2025188 от 18.08.2025 г.
+2025г.
+г. Москва
+«__»
+Акционерное общество «Компания ТрансТелеКом» (АО «Компания ТрансТелеКом»),
+№ 0350/2025 от 01.08.2025 г., с одной стороны, и Общество с ограниченной ответственностью
+«Инко-Т» (ООО «Инко-Т»), именуемое в дальнейшем «Поставщик», в лице Генерального
+директора Горбачева Максима Николаевича, действующего на основании Устава, с другой
+стороны, далее совместно именуемые «Стороны», а по отдельности – «Сторона», заключили
+настоящий Заказ (далее – «Заказ») о нижеследующем:
+1. Поставщик обязуется поставить, а Покупатель принять и оплатить Товар,
+и
+Заказе:
+Кол-во,`
+    },
+    {
+      id: "2",
+      name: "doc_2_page_1.jpg",
+      uploadDate: "2025-10-24T03:46:50",
+      size: 288450,
+      pages: 1,
+      status: "error"
+    },
+    {
+      id: "3",
+      name: "doc_2_page_1.jpg",
+      uploadDate: "2025-10-23T22:40:55",
+      size: 288450,
+      pages: 1,
+      status: "uploaded"
+    },
+    {
+      id: "4",
+      name: "doc_2_page_1.jpg",
+      uploadDate: "2025-10-23T22:01:06",
+      size: 288450,
+      pages: 1,
+      status: "processing",
+      confidence: 93.09
+    }
+  ]);
   const { toast } = useToast();
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -48,6 +103,18 @@ const Index = () => {
       setProgress(i);
     }
 
+    // Добавляем новый документ
+    const newDoc: Document = {
+      id: Date.now().toString(),
+      name: files[0].name,
+      uploadDate: new Date().toISOString(),
+      size: files[0].size,
+      pages: 1,
+      status: "processing",
+      confidence: 93
+    };
+    setDocuments(prev => [newDoc, ...prev]);
+
     setIsProcessing(false);
     toast({
       title: "Документы обработаны!",
@@ -55,51 +122,59 @@ const Index = () => {
     });
   };
 
+  const handleDeleteDocument = (id: string) => {
+    setDocuments(prev => prev.filter(doc => doc.id !== id));
+    toast({
+      title: "Документ удалён",
+      description: "Документ успешно удалён из списка",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-lg sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
-              <Sparkles className="h-6 w-6 text-primary-foreground" />
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
+                <FileText className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">
+                  DocAI MVP
+                </h1>
+                <p className="text-xs text-muted-foreground">Загрузка и обработка документов</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                DocAI
-              </h1>
-              <p className="text-xs text-muted-foreground">OCR Processing System</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="hidden sm:flex">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              93%+ Accuracy
-            </Badge>
             <Button variant="outline" size="sm">
-              <FileText className="h-4 w-4 mr-2" />
-              Документы
+              <Sparkles className="h-4 w-4 mr-2" />
+              Постобработка
             </Button>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="flex gap-2 max-w-2xl">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Поиск по документам..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button>Найти</Button>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-12 animate-fade-in-up">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent">
-            Обработка документов с AI
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Быстрое и точное распознавание текста из ваших документов 
-            с использованием технологии PaddleOCR
-          </p>
-        </div>
 
         {/* Upload Area */}
         <Card 
           className={`
-            max-w-3xl mx-auto p-8 md:p-12 mb-12 transition-all duration-300
+            max-w-5xl mx-auto p-8 md:p-12 mb-12 transition-all duration-300
             ${isDragging ? 'border-primary border-2 scale-[1.02] shadow-glow' : 'border-dashed border-2'}
             ${isProcessing ? 'opacity-60 pointer-events-none' : ''}
             hover:border-primary/50 hover:shadow-lg
@@ -110,17 +185,20 @@ const Index = () => {
           onDrop={handleDrop}
         >
           <div className="flex flex-col items-center justify-center text-center">
-            <div className="h-20 w-20 rounded-full bg-accent flex items-center justify-center mb-6 animate-scale-in">
-              <Upload className="h-10 w-10 text-accent-foreground" />
+            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mb-6 animate-scale-in">
+              <Upload className="h-10 w-10 text-primary" />
             </div>
             
             <h3 className="text-2xl font-semibold mb-2">
-              {isProcessing ? "Обработка документов..." : "Загрузите документы"}
+              {isProcessing ? "Обработка документов..." : "Перетащите файлы сюда"}
             </h3>
             
-            <p className="text-muted-foreground mb-6 max-w-md">
-              Перетащите файлы сюда или нажмите кнопку для выбора.
-              Поддерживаются форматы: JPG, PNG, PDF
+            <p className="text-muted-foreground mb-2">
+              или нажмите для выбора файлов
+            </p>
+            
+            <p className="text-sm text-muted-foreground mb-6">
+              Поддерживаемые форматы: PDF, JPG, PNG (макс. 50МБ)
             </p>
 
             {isProcessing && (
@@ -131,20 +209,13 @@ const Index = () => {
             )}
 
             {!isProcessing && (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-primary hover:opacity-90 shadow-md hover:shadow-glow transition-all"
-                  onClick={() => document.getElementById('file-input')?.click()}
-                >
-                  <Upload className="h-5 w-5 mr-2" />
-                  Выбрать файлы
-                </Button>
-                <Button variant="outline" size="lg">
-                  <FileText className="h-5 w-5 mr-2" />
-                  Посмотреть примеры
-                </Button>
-              </div>
+              <Button 
+                size="lg" 
+                variant="secondary"
+                onClick={() => document.getElementById('file-input')?.click()}
+              >
+                Загрузить файл
+              </Button>
             )}
 
             <input
@@ -158,60 +229,11 @@ const Index = () => {
           </div>
         </Card>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto animate-fade-in">
-          <Card className="p-6 bg-gradient-card hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Высокая точность</h3>
-            <p className="text-sm text-muted-foreground">
-              93%+ уверенность распознавания текста на русском и других языках
-            </p>
-          </Card>
-
-          <Card className="p-6 bg-gradient-card hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-            <div className="h-12 w-12 rounded-lg bg-success/10 flex items-center justify-center mb-4">
-              <CheckCircle className="h-6 w-6 text-success" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Быстрая обработка</h3>
-            <p className="text-sm text-muted-foreground">
-              Обработка документа занимает всего ~13 секунд
-            </p>
-          </Card>
-
-          <Card className="p-6 bg-gradient-card hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-            <div className="h-12 w-12 rounded-lg bg-accent flex items-center justify-center mb-4">
-              <Download className="h-6 w-6 text-accent-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Экспорт результатов</h3>
-            <p className="text-sm text-muted-foreground">
-              Скачивайте результаты в формате Markdown для дальнейшего использования
-            </p>
-          </Card>
-        </div>
-
-        {/* Stats Section */}
-        <div className="mt-16 max-w-4xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">93%+</div>
-              <div className="text-sm text-muted-foreground">Точность</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">~13s</div>
-              <div className="text-sm text-muted-foreground">Время обработки</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">~5s</div>
-              <div className="text-sm text-muted-foreground">Инициализация</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-primary mb-2">3+</div>
-              <div className="text-sm text-muted-foreground">Форматов</div>
-            </div>
-          </div>
-        </div>
+        {/* Documents List */}
+        <DocumentList 
+          documents={documents}
+          onDeleteDocument={handleDeleteDocument}
+        />
       </main>
 
       {/* Footer */}
