@@ -1,17 +1,25 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, CheckCircle } from "lucide-react";
+import { FileText, CheckCircle, Sparkles } from "lucide-react";
 import { Document } from "@/types/document";
 
 interface ShowTextModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   document: Document | null;
+  onCreateSimilar?: (doc: Document) => void;
 }
 
-export const ShowTextModal = ({ open, onOpenChange, document }: ShowTextModalProps) => {
+export const ShowTextModal = ({ open, onOpenChange, document, onCreateSimilar }: ShowTextModalProps) => {
   if (!document) return null;
+
+  const handleCreateSimilar = () => {
+    if (onCreateSimilar) {
+      onCreateSimilar(document);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,6 +59,15 @@ export const ShowTextModal = ({ open, onOpenChange, document }: ShowTextModalPro
               <span className="font-medium">Страница 1</span>
               <Badge variant="outline">{document.confidence}%</Badge>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCreateSimilar}
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              Создать подобный документ
+            </Button>
           </div>
           
           <ScrollArea className="h-[50vh]">

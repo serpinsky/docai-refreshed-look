@@ -1,19 +1,17 @@
 import { useState } from "react";
-import { Upload, FileText, Sparkles, CheckCircle, Download, Search } from "lucide-react";
+import { Upload, FileText, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentList } from "@/components/DocumentList";
 import { Document } from "@/types/document";
+import { UserMenu } from "@/components/UserMenu";
 
 const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
   const [documents, setDocuments] = useState<Document[]>([
     {
       id: "1",
@@ -135,7 +133,7 @@ const Index = () => {
       {/* Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow">
                 <FileText className="h-6 w-6 text-primary-foreground" />
@@ -147,24 +145,13 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">Загрузка и обработка документов</p>
               </div>
             </div>
-            <Button variant="outline" size="sm">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Постобработка
-            </Button>
-          </div>
-          
-          {/* Search Bar */}
-          <div className="flex gap-2 max-w-2xl">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Поиск по документам..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm">
+                <Sparkles className="h-4 w-4 mr-2" />
+                Постобработка
+              </Button>
+              <UserMenu />
             </div>
-            <Button>Найти</Button>
           </div>
         </div>
       </header>
