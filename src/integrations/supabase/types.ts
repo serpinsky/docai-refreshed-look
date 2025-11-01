@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      document_groups: {
+        Row: {
+          added_at: string
+          document_id: string
+          group_id: string
+          id: string
+        }
+        Insert: {
+          added_at?: string
+          document_id: string
+          group_id: string
+          id?: string
+        }
+        Update: {
+          added_at?: string
+          document_id?: string
+          group_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

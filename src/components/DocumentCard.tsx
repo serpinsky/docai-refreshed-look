@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FileText, Search, MessageSquare, Download, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { FileText, Search, MessageSquare, Download, Trash2, ChevronDown } from "lucide-react";
 import { Document, DocumentStatus } from "@/types/document";
 
 interface DocumentCardProps {
@@ -9,7 +10,7 @@ interface DocumentCardProps {
   onShowText: (doc: Document) => void;
   onSearch: (doc: Document) => void;
   onChat: (doc: Document) => void;
-  onExport: (doc: Document) => void;
+  onExport: (doc: Document, format: 'md' | 'docx' | 'xlsx') => void;
   onDelete: (id: string) => void;
 }
 
@@ -88,14 +89,29 @@ export const DocumentCard = ({
               Чат с документом
             </Button>
             
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => onExport(document)}
-            >
-              <Download className="h-3 w-3 mr-1" />
-              Экспорт MD
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Download className="h-3 w-3 mr-1" />
+                  Экспорт
+                  <ChevronDown className="h-3 w-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => onExport(document, 'md')}>
+                  <FileText className="h-3 w-3 mr-2" />
+                  Markdown (.md)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onExport(document, 'docx')}>
+                  <FileText className="h-3 w-3 mr-2" />
+                  Word (.docx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onExport(document, 'xlsx')}>
+                  <FileText className="h-3 w-3 mr-2" />
+                  Excel (.xlsx)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
