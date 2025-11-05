@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DocumentCard } from "./DocumentCard";
+import { DocumentPreview } from "./DocumentPreview";
 import { ShowTextModal } from "./modals/ShowTextModal";
 import { SearchModal } from "./modals/SearchModal";
 import { ChatModal } from "./modals/ChatModal";
@@ -13,10 +13,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, FolderPlus, MessageSquare, Folder, Trash2, FileText, Plus } from "lucide-react";
+import { 
+  Search, FolderPlus, MessageSquare, Folder, Trash2, FileText, Plus, 
+  Upload, Eye, Download, MoreVertical, X
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  ResizablePanelGroup, 
+  ResizablePanel, 
+  ResizableHandle 
+} from "@/components/ui/resizable";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DocumentListProps {
   documents: Document[];
@@ -292,17 +306,31 @@ export const DocumentList = ({
     return null;
   }
 
+  const getStatusBadge = (status: Document['status']) => {
+    const variants = {
+      recognized: "default" as const,
+      error: "destructive" as const,
+      uploaded: "secondary" as const,
+      processing: "outline" as const
+    };
+    return variants[status];
+  };
+
   return (
     <>
-      <div className="max-w-6xl mx-auto mb-12">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Управление документами
-            </h2>
+      <div className="w-full mb-12">
+        <div className="mb-4">
+          <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent px-6">
+            Управление документами
+          </h2>
+        </div>
+
+        {/* Toolbar */}
+        <div className="bg-card border-y border-border px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="shadow-glow">
+                <Button variant="outline" size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Создать группу
                 </Button>
@@ -328,125 +356,98 @@ export const DocumentList = ({
                 </div>
               </DialogContent>
             </Dialog>
+
+            {!selectedGroupId && selectedDocumentIds.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAddToGroupModal(true)}
+              >
+                <FolderPlus className="h-4 w-4 mr-2" />
+                Добавить в группу
+              </Button>
+            )}
+
+            {selectedGroupId && selectedDocumentIds.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Удалить из группы
+              </Button>
+            )}
+
+            {selectedGroupId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setGroupChatModal(true)}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Чат по группе
+              </Button>
+            )}
           </div>
 
-          <Tabs 
-            value={selectedGroupId || "all"} 
-            onValueChange={(value) => setSelectedGroupId(value === "all" ? null : value)}
-            className="w-full"
-          >
-            <div className="relative">
-              <TabsList className="w-full justify-start overflow-x-auto flex-nowrap bg-muted/50 p-1 rounded-lg">
-                <TabsTrigger 
-                  value="all" 
-                  className="data-[state=active]:bg-card data-[state=active]:shadow-md transition-all"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Все документы
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    ({documents.length})
-                  </span>
-                </TabsTrigger>
-                {groups.map((group) => (
-                  <TabsTrigger 
-                    key={group.id} 
-                    value={group.id}
-                    className="data-[state=active]:bg-card data-[state=active]:shadow-md transition-all group"
-                  >
-                    <Folder className="h-4 w-4 mr-2" />
-                    {group.name}
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      ({documentCounts[group.id] || 0})
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 p-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteGroup(group.id);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+          <div className="flex items-center gap-2">
+            <div className="relative w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder={selectedGroupId ? "Поиск в группе..." : "Поиск по всем документам..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 text-sm"
+              />
             </div>
+          </div>
+        </div>
 
-            <TabsContent value={selectedGroupId || "all"} className="mt-6 space-y-6">
-              {selectedGroupId && (
-                <div className="flex items-center justify-between p-4 bg-accent/30 rounded-lg border border-accent">
-                  <div>
-                    <h3 className="font-semibold text-lg">{selectedGroup?.name}</h3>
-                    {selectedGroup?.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{selectedGroup.description}</p>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setGroupChatModal(true)}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Чат по группе
-                  </Button>
-                </div>
-              )}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input 
-                  placeholder={selectedGroupId ? "Поиск в группе..." : "Поиск по всем документам..."}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-12 text-base bg-card shadow-sm"
-                />
-              </div>
+        {/* Groups Tabs */}
+        <div className="bg-muted/30 border-b border-border px-6 py-2 flex items-center gap-1 overflow-x-auto">
+          <Button
+            variant={!selectedGroupId ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setSelectedGroupId(null)}
+            className="shrink-0"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Все документы
+            <Badge variant="secondary" className="ml-2">{documents.length}</Badge>
+          </Button>
+          {groups.map((group) => (
+            <div key={group.id} className="flex items-center gap-1">
+              <Button
+                variant={selectedGroupId === group.id ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setSelectedGroupId(group.id)}
+                className="shrink-0"
+              >
+                <Folder className="h-4 w-4 mr-2" />
+                {group.name}
+                <Badge variant="secondary" className="ml-2">{documentCounts[group.id] || 0}</Badge>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => deleteGroup(group.id)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
 
-              {selectedDocumentIds.length > 0 && (
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">{selectedDocumentIds.length}</span>
-                    </div>
-                    <span className="font-medium">
-                      {selectedDocumentIds.length === 1 ? 'документ выбран' : `документов выбрано`}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    {!selectedGroupId && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setAddToGroupModal(true)}
-                      >
-                        <FolderPlus className="h-4 w-4 mr-2" />
-                        Добавить в группу
-                      </Button>
-                    )}
-                    {selectedGroupId && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleBulkDelete}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Удалить из группы
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedDocumentIds([])}
-                    >
-                      Отменить
-                    </Button>
-                  </div>
-                </div>
-              )}
-
+        {/* Main Content Area */}
+        <ResizablePanelGroup direction="horizontal" className="min-h-[600px]">
+          {/* Left Panel - Document List */}
+          <ResizablePanel defaultSize={40} minSize={30}>
+            <div className="h-full flex flex-col bg-muted/10">
+              {/* Select All Bar */}
               {filteredDocuments.length > 0 && (
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-3 p-4 border-b border-border bg-card">
                   <Checkbox
                     checked={selectedDocumentIds.length === filteredDocuments.length && filteredDocuments.length > 0}
                     onCheckedChange={selectAll}
@@ -454,53 +455,106 @@ export const DocumentList = ({
                   <span className="text-sm font-medium">
                     Выбрать все ({filteredDocuments.length})
                   </span>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {filteredDocuments.map((doc) => (
-                  <div key={doc.id} className="flex items-start gap-3 group">
-                    <Checkbox
-                      checked={selectedDocumentIds.includes(doc.id)}
-                      onCheckedChange={() => toggleDocumentSelection(doc.id)}
-                      className="mt-6"
-                    />
-                    <div className="flex-1">
-                      <DocumentCard
-                        document={doc}
-                        onShowText={handleShowText}
-                        onSearch={handleSearch}
-                        onChat={handleChat}
-                        onExport={handleExport}
-                        onDelete={selectedGroupId ? handleDeleteFromGroup : onDeleteDocument}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {filteredDocuments.length === 0 && (
-                <div className="text-center py-16">
-                  <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-muted/50 mb-4">
-                    <FileText className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-lg font-medium text-muted-foreground">
-                    {selectedGroupId 
-                      ? "В этой группе пока нет документов"
-                      : searchQuery 
-                      ? "Документы не найдены" 
-                      : "Нет документов"}
-                  </p>
-                  {selectedGroupId && !searchQuery && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Добавьте документы в группу, выбрав их на вкладке "Все документы"
-                    </p>
+                  {selectedDocumentIds.length > 0 && (
+                    <Badge variant="default" className="ml-auto">
+                      {selectedDocumentIds.length} выбрано
+                    </Badge>
                   )}
                 </div>
               )}
-            </TabsContent>
-          </Tabs>
-        </div>
+
+              {/* Document List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {filteredDocuments.map((doc) => (
+                  <div 
+                    key={doc.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer hover:shadow-md ${
+                      selectedDocument?.id === doc.id 
+                        ? 'bg-accent border-accent-foreground/20' 
+                        : 'bg-card border-border hover:bg-accent/50'
+                    }`}
+                    onClick={() => setSelectedDocument(doc)}
+                  >
+                    <Checkbox
+                      checked={selectedDocumentIds.includes(doc.id)}
+                      onCheckedChange={() => toggleDocumentSelection(doc.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <FileText className="h-4 w-4 text-primary shrink-0" />
+                        <span className="font-medium text-sm truncate">{doc.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Badge variant={getStatusBadge(doc.status)} className="text-xs">
+                          {doc.status}
+                        </Badge>
+                        <span>{doc.pages} стр.</span>
+                        <span>{(doc.size / 1024).toFixed(1)} KB</span>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleShowText(doc)}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Показать текст
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleSearch(doc)}>
+                          <Search className="h-4 w-4 mr-2" />
+                          Поиск
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleChat(doc)}>
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Чат
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport(doc, 'md')}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Экспорт
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => selectedGroupId ? handleDeleteFromGroup(doc.id) : onDeleteDocument(doc.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Удалить
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))}
+
+                {filteredDocuments.length === 0 && (
+                  <div className="text-center py-16">
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-muted/50 mb-4">
+                      <FileText className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-lg font-medium text-muted-foreground">
+                      {selectedGroupId 
+                        ? "В этой группе пока нет документов"
+                        : searchQuery 
+                        ? "Документы не найдены" 
+                        : "Нет документов"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* Right Panel - Document Preview */}
+          <ResizablePanel defaultSize={60} minSize={40}>
+            <div className="h-full p-6 bg-background overflow-hidden">
+              <DocumentPreview document={selectedDocument} />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
 
       <ShowTextModal 
