@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentList } from "@/components/DocumentList";
-import { GroupManager } from "@/components/GroupManager";
 import { Document } from "@/types/document";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -13,8 +12,6 @@ const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [selectedGroupName, setSelectedGroupName] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [documents, setDocuments] = useState<Document[]>([
     {
@@ -132,11 +129,6 @@ const Index = () => {
     });
   };
 
-  const handleSelectGroup = (groupId: string | null) => {
-    setSelectedGroupId(groupId);
-    setRefreshKey(prev => prev + 1);
-  };
-
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
   };
@@ -170,12 +162,6 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto px-4 py-12">
-        {/* Group Manager */}
-        <GroupManager 
-          onSelectGroup={handleSelectGroup}
-          selectedGroupId={selectedGroupId}
-        />
-
         {/* Upload Area */}
         <Card 
           className={`
@@ -239,8 +225,6 @@ const Index = () => {
           key={refreshKey}
           documents={documents}
           onDeleteDocument={handleDeleteDocument}
-          selectedGroupId={selectedGroupId}
-          groupName={selectedGroupName}
           onRefresh={handleRefresh}
         />
       </main>
