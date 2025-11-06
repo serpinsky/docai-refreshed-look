@@ -328,35 +328,6 @@ export const DocumentList = ({
         {/* Toolbar */}
         <div className="bg-card border-y border-border px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Создать группу
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Создать новую группу</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <Input
-                    placeholder="Название группы"
-                    value={newGroupName}
-                    onChange={(e) => setNewGroupName(e.target.value)}
-                  />
-                  <Textarea
-                    placeholder="Описание (необязательно)"
-                    value={newGroupDescription}
-                    onChange={(e) => setNewGroupDescription(e.target.value)}
-                  />
-                  <Button onClick={createGroup} className="w-full">
-                    Создать
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
             {!selectedGroupId && selectedDocumentIds.length > 0 && (
               <Button
                 variant="outline"
@@ -462,6 +433,37 @@ export const DocumentList = ({
 
         {/* Groups Tabs */}
         <div className="bg-muted/30 border-b border-border px-6 py-2 flex items-center gap-1 overflow-x-auto">
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="shrink-0">
+                <Plus className="h-4 w-4 mr-2" />
+                Создать группу
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Создать новую группу</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <Input
+                  placeholder="Название группы"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                />
+                <Textarea
+                  placeholder="Описание (необязательно)"
+                  value={newGroupDescription}
+                  onChange={(e) => setNewGroupDescription(e.target.value)}
+                />
+                <Button onClick={createGroup} className="w-full">
+                  Создать
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <div className="h-6 w-px bg-border mx-1" />
+
           <Button
             variant={!selectedGroupId ? "secondary" : "ghost"}
             size="sm"
@@ -487,8 +489,12 @@ export const DocumentList = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
-                onClick={() => deleteGroup(group.id)}
+                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteGroup(group.id);
+                }}
+                title="Удалить группу"
               >
                 <X className="h-3 w-3" />
               </Button>
