@@ -389,19 +389,75 @@ export const DocumentList = ({
                 Чат по группе
               </Button>
             )}
+
+            {/* Document Actions - shown when a document is selected */}
+            {selectedDocument && (
+              <>
+                <div className="h-6 w-px bg-border mx-2" />
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-4 w-4 mr-2" />
+                      Экспорт
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleExport(selectedDocument, 'md')}>
+                      Markdown (.md)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport(selectedDocument, 'docx')}>
+                      Word (.docx)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport(selectedDocument, 'xlsx')}>
+                      Excel (.xlsx)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleChat(selectedDocument)}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Чат
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleShowText(selectedDocument)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Показать исходник
+                </Button>
+
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Поиск по документу..."
+                    className="pl-9 h-9 text-sm"
+                    onChange={(e) => handleSearch(selectedDocument)}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder={selectedGroupId ? "Поиск в группе..." : "Поиск по всем документам..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-sm"
-              />
+          {!selectedDocument && (
+            <div className="flex items-center gap-2">
+              <div className="relative w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder={selectedGroupId ? "Поиск в группе..." : "Поиск по всем документам..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Groups Tabs */}
