@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DocumentList } from "@/components/DocumentList";
 import { Document } from "@/types/document";
 import { UserMenu } from "@/components/UserMenu";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [isDragging, setIsDragging] = useState(false);
@@ -36,7 +37,17 @@ const Index = () => {
 1. Поставщик обязуется поставить, а Покупатель принять и оплатить Товар,
 и
 Заказе:
-Кол-во,`
+Кол-во,`,
+      metrics: {
+        documentType: "Договор поставки",
+        counterparties: ["АО «Компания ТрансТелеКом»", "ООО «Инко-Т»"],
+        amountWithVAT: 1500000,
+        amountWithoutVAT: 1250000,
+        vatAmount: 250000,
+        currency: "₽",
+        contractNumber: "КТТК2025188",
+        date: "18.08.2025"
+      }
     },
     {
       id: "2",
@@ -96,29 +107,89 @@ const Index = () => {
     setIsProcessing(true);
     setProgress(0);
 
-    // Симуляция обработки
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setProgress(i);
+    try {
+      // Симуляция обработки
+      for (let i = 0; i <= 50; i += 10) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setProgress(i);
+      }
+
+      const file = files[0];
+      
+      // Симуляция OCR текста (в реальном приложении это будет настоящее распознавание)
+      const mockText = `Заказ № ${Math.floor(Math.random() * 1000)}
+к договору № ДОГ${Math.floor(Math.random() * 10000)} от ${new Date().toLocaleDateString('ru-RU')}
+АО «Компания Пример», именуемое в дальнейшем «Покупатель», с одной стороны, 
+и ООО «Контрагент», именуемое в дальнейшем «Поставщик», с другой стороны.
+Сумма договора: ${Math.floor(Math.random() * 5000000)} рублей с НДС.`;
+
+      // Создаем документ со статусом processing
+      const newDoc: Document = {
+        id: Date.now().toString(),
+        name: file.name,
+        uploadDate: new Date().toISOString(),
+        size: file.size,
+        pages: 1,
+        status: "processing",
+        confidence: 93,
+        text: mockText
+      };
+      
+      setDocuments(prev => [newDoc, ...prev]);
+      setProgress(60);
+
+      // Вызываем AI анализ
+      console.log("Starting AI analysis for document:", newDoc.name);
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke(
+        'analyze-document',
+        {
+          body: { text: mockText, documentName: file.name }
+        }
+      );
+
+      setProgress(90);
+
+      if (analysisError) {
+        console.error("Analysis error:", analysisError);
+        toast({
+          title: "Ошибка анализа",
+          description: "Не удалось проанализировать документ",
+          variant: "destructive",
+        });
+        
+        // Обновляем документ со статусом recognized без метрик
+        setDocuments(prev => prev.map(doc => 
+          doc.id === newDoc.id 
+            ? { ...doc, status: "recognized" as const }
+            : doc
+        ));
+      } else {
+        console.log("Analysis completed:", analysisData);
+        
+        // Обновляем документ с метриками
+        setDocuments(prev => prev.map(doc => 
+          doc.id === newDoc.id 
+            ? { ...doc, status: "recognized" as const, metrics: analysisData.metrics }
+            : doc
+        ));
+
+        toast({
+          title: "Документ проанализирован!",
+          description: `Тип: ${analysisData.metrics?.documentType || 'Не определён'}`,
+        });
+      }
+
+      setProgress(100);
+    } catch (error) {
+      console.error("Processing error:", error);
+      toast({
+        title: "Ошибка обработки",
+        description: "Не удалось обработать документ",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
-
-    // Добавляем новый документ
-    const newDoc: Document = {
-      id: Date.now().toString(),
-      name: files[0].name,
-      uploadDate: new Date().toISOString(),
-      size: files[0].size,
-      pages: 1,
-      status: "processing",
-      confidence: 93
-    };
-    setDocuments(prev => [newDoc, ...prev]);
-
-    setIsProcessing(false);
-    toast({
-      title: "Документы обработаны!",
-      description: `Успешно обработано ${files.length} документов с точностью 95%+`,
-    });
   };
 
   const handleDeleteDocument = (id: string) => {
