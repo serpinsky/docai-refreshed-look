@@ -328,17 +328,6 @@ export const DocumentList = ({
         {/* Toolbar */}
         <div className="bg-card border-y border-border px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            {!selectedGroupId && selectedDocumentIds.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAddToGroupModal(true)}
-              >
-                <FolderPlus className="h-4 w-4 mr-2" />
-                Добавить в группу
-              </Button>
-            )}
-
             {selectedGroupId && selectedDocumentIds.length > 0 && (
               <Button
                 variant="outline"
@@ -377,34 +366,46 @@ export const DocumentList = ({
 
         {/* Groups Tabs */}
         <div className="bg-muted/30 border-b border-border px-6 py-2 flex items-center gap-1 overflow-x-auto">
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="shrink-0">
-                <Plus className="h-4 w-4 mr-2" />
-                Создать группу
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Создать новую группу</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <Input
-                  placeholder="Название группы"
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                />
-                <Textarea
-                  placeholder="Описание (необязательно)"
-                  value={newGroupDescription}
-                  onChange={(e) => setNewGroupDescription(e.target.value)}
-                />
-                <Button onClick={createGroup} className="w-full">
-                  Создать
+          {selectedDocumentIds.length === 0 ? (
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="shrink-0">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Создать группу
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Создать новую группу</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <Input
+                    placeholder="Название группы"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                  />
+                  <Textarea
+                    placeholder="Описание (необязательно)"
+                    value={newGroupDescription}
+                    onChange={(e) => setNewGroupDescription(e.target.value)}
+                  />
+                  <Button onClick={createGroup} className="w-full">
+                    Создать
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAddToGroupModal(true)}
+              className="shrink-0"
+            >
+              <FolderPlus className="h-4 w-4 mr-2" />
+              Добавить в группу
+            </Button>
+          )}
 
           <div className="h-6 w-px bg-border mx-1" />
 
