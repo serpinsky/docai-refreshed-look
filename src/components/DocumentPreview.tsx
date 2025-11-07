@@ -1,7 +1,8 @@
 import { Document } from "@/types/document";
-import { FileText, Calendar, FileType, Hash } from "lucide-react";
+import { FileText, Calendar, FileType, Hash, Building2, DollarSign, FileCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 interface DocumentPreviewProps {
   document: Document | null;
@@ -82,6 +83,77 @@ export const DocumentPreview = ({ document }: DocumentPreviewProps) => {
           )}
         </div>
       </div>
+
+      {/* Document Analysis Metrics */}
+      {document.metrics && (
+        <div className="p-6 border-b border-border bg-muted/20">
+          <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+            <FileCheck className="h-4 w-4" />
+            Анализ документа
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
+            {document.metrics.documentType && (
+              <Card className="p-3 bg-card border-border">
+                <div className="text-xs text-muted-foreground mb-1">Тип документа</div>
+                <div className="text-sm font-medium text-foreground">{document.metrics.documentType}</div>
+              </Card>
+            )}
+            {document.metrics.contractNumber && (
+              <Card className="p-3 bg-card border-border">
+                <div className="text-xs text-muted-foreground mb-1">Номер договора</div>
+                <div className="text-sm font-medium text-foreground">{document.metrics.contractNumber}</div>
+              </Card>
+            )}
+            {document.metrics.counterparties && document.metrics.counterparties.length > 0 && (
+              <Card className="p-3 bg-card border-border col-span-2">
+                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <Building2 className="h-3 w-3" />
+                  Контрагенты
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {document.metrics.counterparties.join(', ')}
+                </div>
+              </Card>
+            )}
+            {document.metrics.amountWithVAT && (
+              <Card className="p-3 bg-card border-border">
+                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  Сумма с НДС
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {document.metrics.amountWithVAT.toLocaleString('ru-RU')} {document.metrics.currency || '₽'}
+                </div>
+              </Card>
+            )}
+            {document.metrics.amountWithoutVAT && (
+              <Card className="p-3 bg-card border-border">
+                <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  Сумма без НДС
+                </div>
+                <div className="text-sm font-medium text-foreground">
+                  {document.metrics.amountWithoutVAT.toLocaleString('ru-RU')} {document.metrics.currency || '₽'}
+                </div>
+              </Card>
+            )}
+            {document.metrics.vatAmount && (
+              <Card className="p-3 bg-card border-border">
+                <div className="text-xs text-muted-foreground mb-1">НДС</div>
+                <div className="text-sm font-medium text-foreground">
+                  {document.metrics.vatAmount.toLocaleString('ru-RU')} {document.metrics.currency || '₽'}
+                </div>
+              </Card>
+            )}
+            {document.metrics.date && (
+              <Card className="p-3 bg-card border-border">
+                <div className="text-xs text-muted-foreground mb-1">Дата документа</div>
+                <div className="text-sm font-medium text-foreground">{document.metrics.date}</div>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">

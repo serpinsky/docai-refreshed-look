@@ -319,15 +319,25 @@ export const DocumentList = ({
   return (
     <>
       <div className="w-full mb-12">
-        <div className="mb-4">
-          <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent px-6">
+        {/* Header with Search */}
+        <div className="mb-4 px-6 flex items-center justify-between gap-4">
+          <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
             Управление документами
           </h2>
+          <div className="relative w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder={selectedGroupId ? "Поиск в группе..." : "Поиск по всем документам..."}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
         </div>
 
-        {/* Toolbar */}
-        <div className="bg-card border-y border-border px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        {/* Toolbar for group actions */}
+        {(selectedGroupId && selectedDocumentIds.length > 0) || selectedGroupId ? (
+          <div className="bg-card border-y border-border px-6 py-3 flex items-center gap-2">
             {selectedGroupId && selectedDocumentIds.length > 0 && (
               <Button
                 variant="outline"
@@ -350,19 +360,7 @@ export const DocumentList = ({
               </Button>
             )}
           </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder={selectedGroupId ? "Поиск в группе..." : "Поиск по всем документам..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-sm"
-              />
-            </div>
-          </div>
-        </div>
+        ) : null}
 
         {/* Groups Tabs */}
         <div className="bg-muted/30 border-b border-border px-6 py-2 flex items-center gap-1 overflow-x-auto">
