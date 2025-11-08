@@ -37,12 +37,14 @@ interface DocumentListProps {
   documents: Document[];
   onDeleteDocument: (id: string) => void;
   onRefresh?: () => void;
+  onUpdateMetrics?: (documentId: string, metrics: any) => void;
 }
 
 export const DocumentList = ({ 
   documents, 
   onDeleteDocument,
-  onRefresh 
+  onRefresh,
+  onUpdateMetrics
 }: DocumentListProps) => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -62,6 +64,71 @@ export const DocumentList = ({
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const { toast } = useToast();
+
+  const updateDocumentMetrics = (documentId: string, metrics: any) => {
+    onUpdateMetrics?.(documentId, metrics);
+    setDocumentDataModal(false);
+  };
+
+  const handleBulkExport = () => {
+    const selectedDocs = filteredDocuments.filter(doc => selectedDocumentIds.includes(doc.id));
+    
+    let exportText = "МАССОВЫЙ ЭКСПОРТ ДАННЫХ ДОКУМЕНТОВ\n";
+    exportText += "=".repeat(50) + "\n\n";
+
+    selectedDocs.forEach((doc, index) => {
+      exportText += `\n### ДОКУМЕНТ ${index + 1}: ${doc.name}\n\n`;
+      
+      const m = doc.metrics;
+      if (!m) {
+        exportText += "Нет данных для экспорта\n";
+        return;
+      }
+
+      if (m.fullNames?.length) {
+        exportText += `ФИО:\n${m.fullNames.map(n => `  - ${n}`).join('\n')}\n\n`;
+      }
+      if (m.addresses?.length) {
+        exportText += `Адреса:\n${m.addresses.map(a => `  - ${a}`).join('\n')}\n\n`;
+      }
+      if (m.dates?.length) {
+        exportText += `Даты:\n${m.dates.map(d => `  - ${d}`).join('\n')}\n\n`;
+      }
+      if (m.amounts?.length) {
+        exportText += `Суммы:\n${m.amounts.map(a => `  - ${a}`).join('\n')}\n\n`;
+      }
+      if (m.organizationName || m.legalForm) {
+        exportText += `Юридическая информация:\n`;
+        if (m.organizationName) exportText += `  - Название организации: ${m.organizationName}\n`;
+        if (m.legalForm) exportText += `  - Организационно-правовая форма: ${m.legalForm}\n`;
+        exportText += '\n';
+      }
+      if (m.bankName || m.accountNumber || m.bik || m.kbk || m.inn || m.oktmo || m.kpp) {
+        exportText += `Платежные данные и реквизиты:\n`;
+        if (m.bankName) exportText += `  - Название банка: ${m.bankName}\n`;
+        if (m.accountNumber) exportText += `  - Расчетный счет: ${m.accountNumber}\n`;
+        if (m.bik) exportText += `  - БИК: ${m.bik}\n`;
+        if (m.kbk) exportText += `  - КБК: ${m.kbk}\n`;
+        if (m.inn) exportText += `  - ИНН: ${m.inn}\n`;
+        if (m.oktmo) exportText += `  - ОКТМО: ${m.oktmo}\n`;
+        if (m.kpp) exportText += `  - КПП: ${m.kpp}\n`;
+      }
+      exportText += "\n" + "=".repeat(50) + "\n";
+    });
+
+    const blob = new Blob([exportText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = window.document.createElement('a');
+    a.href = url;
+    a.download = `bulk_export_${selectedDocs.length}_documents.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Экспорт завершен",
+      description: `Данные ${selectedDocs.length} документов экспортированы`,
+    });
+  };
 
   useEffect(() => {
     loadGroups();
@@ -340,15 +407,28 @@ export const DocumentList = ({
         {/* Toolbar for group actions */}
         {(selectedGroupId && selectedDocumentIds.length > 0) || selectedGroupId ? (
           <div className="bg-card border-y border-border px-6 py-3 flex items-center gap-2">
-            {selectedGroupId && selectedDocumentIds.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkDelete}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Удалить из группы
-              </Button>
+            {selectedDocumentIds.length > 0 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkExport}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Экспорт данных ({selectedDocumentIds.length})
+                </Button>
+                
+                {selectedGroupId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Удалить из группы
+                  </Button>
+                )}
+              </>
             )}
 
             {selectedGroupId && (
@@ -361,6 +441,17 @@ export const DocumentList = ({
                 Чат по группе
               </Button>
             )}
+          </div>
+        ) : selectedDocumentIds.length > 0 ? (
+          <div className="bg-card border-y border-border px-6 py-3 flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBulkExport}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Экспорт данных ({selectedDocumentIds.length})
+            </Button>
           </div>
         ) : null}
 
@@ -674,6 +765,7 @@ export const DocumentList = ({
         open={documentDataModal}
         onOpenChange={setDocumentDataModal}
         document={selectedDocument}
+        onSave={updateDocumentMetrics}
       />
     </>
   );

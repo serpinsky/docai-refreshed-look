@@ -1,19 +1,107 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, Download } from "lucide-react";
-import { Document } from "@/types/document";
+import { Input } from "@/components/ui/input";
+import { Copy, Download, Edit, Save, X } from "lucide-react";
+import { Document, DocumentMetrics } from "@/types/document";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
+import { validateRequisite } from "@/lib/validation";
+import { useState, useEffect } from "react";
 
 interface DocumentDataModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   document: Document | null;
+  onSave?: (documentId: string, metrics: DocumentMetrics) => void;
 }
 
-export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentDataModalProps) => {
+export const DocumentDataModal = ({ open, onOpenChange, document, onSave }: DocumentDataModalProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedMetrics, setEditedMetrics] = useState<DocumentMetrics | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (document?.metrics) {
+      setEditedMetrics({ ...document.metrics });
+    }
+  }, [document]);
+
   if (!document) return null;
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setValidationErrors({});
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedMetrics(document.metrics ? { ...document.metrics } : null);
+    setValidationErrors({});
+  };
+
+  const validateField = (field: string, value: string) => {
+    const requisiteTypes: Record<string, string> = {
+      inn: 'inn',
+      kpp: 'kpp',
+      bik: 'bik',
+      accountNumber: 'account',
+      kbk: 'kbk',
+      oktmo: 'oktmo',
+    };
+
+    const type = requisiteTypes[field];
+    if (type && value.trim()) {
+      const result = validateRequisite(type, value);
+      if (!result.isValid) {
+        setValidationErrors(prev => ({ ...prev, [field]: result.error || 'Ошибка валидации' }));
+        return false;
+      } else {
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    }
+    return true;
+  };
+
+  const handleSave = () => {
+    if (!editedMetrics) return;
+
+    // Валидация всех реквизитов
+    const fieldsToValidate = ['inn', 'kpp', 'bik', 'accountNumber', 'kbk', 'oktmo'];
+    let hasErrors = false;
+
+    fieldsToValidate.forEach(field => {
+      const value = editedMetrics[field as keyof DocumentMetrics];
+      if (value && typeof value === 'string') {
+        if (!validateField(field, value)) {
+          hasErrors = true;
+        }
+      }
+    });
+
+    if (hasErrors) {
+      toast.error("Исправьте ошибки валидации перед сохранением");
+      return;
+    }
+
+    onSave?.(document.id, editedMetrics);
+    setIsEditing(false);
+    toast.success("Данные документа обновлены");
+  };
+
+  const updateMetricField = (field: keyof DocumentMetrics, value: any) => {
+    if (!editedMetrics) return;
+    setEditedMetrics({ ...editedMetrics, [field]: value });
+    
+    // Валидация при изменении
+    if (typeof value === 'string' && typeof field === 'string') {
+      validateField(field, value);
+    }
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -76,24 +164,51 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
     toast.success(`Данные экспортированы в ${format.toUpperCase()}`);
   };
 
-  const DataItem = ({ label, value, onCopy }: { label: string; value: string; onCopy?: () => void }) => (
-    <div className="flex items-start justify-between gap-2 p-3 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
-      <div className="flex-1 min-w-0">
-        <div className="text-xs text-muted-foreground mb-1">{label}</div>
-        <div className="text-sm font-medium text-foreground break-words">{value}</div>
+  const DataItem = ({ 
+    label, 
+    value, 
+    onCopy, 
+    field, 
+    editable = false 
+  }: { 
+    label: string; 
+    value: string; 
+    onCopy?: () => void; 
+    field?: keyof DocumentMetrics;
+    editable?: boolean;
+  }) => {
+    const error = field ? validationErrors[field] : undefined;
+    
+    return (
+      <div className="space-y-1">
+        <div className="flex items-start justify-between gap-2 p-3 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors">
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-muted-foreground mb-1">{label}</div>
+            {isEditing && editable && field ? (
+              <Input
+                value={value}
+                onChange={(e) => updateMetricField(field, e.target.value)}
+                className={`h-8 text-sm ${error ? 'border-destructive' : ''}`}
+              />
+            ) : (
+              <div className="text-sm font-medium text-foreground break-words">{value}</div>
+            )}
+          </div>
+          {onCopy && !isEditing && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 flex-shrink-0"
+              onClick={onCopy}
+            >
+              <Copy className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        {error && <p className="text-xs text-destructive px-3">{error}</p>}
       </div>
-      {onCopy && (
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 flex-shrink-0"
-          onClick={onCopy}
-        >
-          <Copy className="h-3 w-3" />
-        </Button>
-      )}
-    </div>
-  );
+    );
+  };
 
   const DataList = ({ label, items }: { label: string; items: string[] }) => (
     <div className="space-y-2">
@@ -111,25 +226,60 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
     </div>
   );
 
-  const m = document.metrics;
+  const m = isEditing ? editedMetrics : document.metrics;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Структурированные данные документа</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Структурированные данные документа</span>
+            {!isEditing ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEdit}
+                className="gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Редактировать
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancel}
+                  className="gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Отмена
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSave}
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  Сохранить
+                </Button>
+              </div>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-2 border-b pb-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={copyAllData}
-            className="gap-2"
-          >
-            <Copy className="h-4 w-4" />
-            Копировать все
-          </Button>
+        {!isEditing && (
+          <div className="flex items-center gap-2 border-b pb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyAllData}
+              className="gap-2"
+            >
+              <Copy className="h-4 w-4" />
+              Копировать все
+            </Button>
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
@@ -169,6 +319,7 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
             </Button>
           </div>
         </div>
+        )}
 
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-6 pb-4">
@@ -206,6 +357,8 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
                     <DataItem
                       label="Название организации"
                       value={m.organizationName}
+                      field="organizationName"
+                      editable
                       onCopy={() => copyToClipboard(m.organizationName!, "Название организации")}
                     />
                   )}
@@ -213,6 +366,8 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
                     <DataItem
                       label="Организационно-правовая форма"
                       value={m.legalForm}
+                      field="legalForm"
+                      editable
                       onCopy={() => copyToClipboard(m.legalForm!, "Организационно-правовая форма")}
                     />
                   )}
@@ -229,6 +384,8 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
                     <DataItem
                       label="Название банка"
                       value={m.bankName}
+                      field="bankName"
+                      editable
                       onCopy={() => copyToClipboard(m.bankName!, "Название банка")}
                     />
                   )}
@@ -236,6 +393,8 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
                     <DataItem
                       label="Расчетный счет"
                       value={m.accountNumber}
+                      field="accountNumber"
+                      editable
                       onCopy={() => copyToClipboard(m.accountNumber!, "Расчетный счет")}
                     />
                   )}
@@ -243,6 +402,8 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
                     <DataItem
                       label="БИК"
                       value={m.bik}
+                      field="bik"
+                      editable
                       onCopy={() => copyToClipboard(m.bik!, "БИК")}
                     />
                   )}
@@ -250,6 +411,8 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
                     <DataItem
                       label="КБК"
                       value={m.kbk}
+                      field="kbk"
+                      editable
                       onCopy={() => copyToClipboard(m.kbk!, "КБК")}
                     />
                   )}
@@ -257,6 +420,8 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
                     <DataItem
                       label="ИНН"
                       value={m.inn}
+                      field="inn"
+                      editable
                       onCopy={() => copyToClipboard(m.inn!, "ИНН")}
                     />
                   )}
@@ -264,6 +429,8 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
                     <DataItem
                       label="ОКТМО"
                       value={m.oktmo}
+                      field="oktmo"
+                      editable
                       onCopy={() => copyToClipboard(m.oktmo!, "ОКТМО")}
                     />
                   )}
@@ -271,6 +438,8 @@ export const DocumentDataModal = ({ open, onOpenChange, document }: DocumentData
                     <DataItem
                       label="КПП"
                       value={m.kpp}
+                      field="kpp"
+                      editable
                       onCopy={() => copyToClipboard(m.kpp!, "КПП")}
                     />
                   )}

@@ -204,6 +204,18 @@ const Index = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  const handleUpdateMetrics = (documentId: string, metrics: any) => {
+    setDocuments(prev => prev.map(doc => 
+      doc.id === documentId 
+        ? { ...doc, metrics }
+        : doc
+    ));
+    toast({
+      title: "Обновлено",
+      description: "Данные документа обновлены",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
@@ -297,6 +309,7 @@ const Index = () => {
           documents={documents}
           onDeleteDocument={handleDeleteDocument}
           onRefresh={handleRefresh}
+          onUpdateMetrics={handleUpdateMetrics}
         />
       </main>
 
