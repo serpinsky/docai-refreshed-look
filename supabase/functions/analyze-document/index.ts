@@ -48,7 +48,20 @@ serve(async (req) => {
   "vatAmount": числовое значение НДС или null,
   "currency": "валюта (₽, USD, EUR и т.д.)",
   "contractNumber": "номер договора или null",
-  "date": "дата документа в формате DD.MM.YYYY или null"
+  "date": "дата документа в формате DD.MM.YYYY или null",
+  "fullNames": ["массив ФИО, найденных в документе"],
+  "addresses": ["массив адресов"],
+  "dates": ["массив всех дат в формате DD.MM.YYYY"],
+  "amounts": ["массив всех сумм с указанием валюты"],
+  "organizationName": "название организации или null",
+  "legalForm": "организационно-правовая форма (ООО, АО, ИП и т.д.) или null",
+  "bankName": "название банка или null",
+  "accountNumber": "расчетный счет или null",
+  "bik": "БИК банка или null",
+  "kbk": "КБК или null",
+  "inn": "ИНН или null",
+  "oktmo": "ОКТМО или null",
+  "kpp": "КПП или null"
 }`
           },
           {

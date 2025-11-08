@@ -6,6 +6,7 @@ import { ChatModal } from "./modals/ChatModal";
 import { CreateSimilarModal } from "./modals/CreateSimilarModal";
 import { AddToGroupModal } from "./modals/AddToGroupModal";
 import { GroupChatModal } from "./modals/GroupChatModal";
+import { DocumentDataModal } from "./modals/DocumentDataModal";
 import { Document } from "@/types/document";
 import { Group } from "@/types/group";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Search, FolderPlus, MessageSquare, Folder, Trash2, FileText, Plus, 
-  Upload, Eye, Download, MoreVertical, X
+  Upload, Eye, Download, MoreVertical, X, Database
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -56,6 +57,7 @@ export const DocumentList = ({
   const [createSimilarModal, setCreateSimilarModal] = useState(false);
   const [addToGroupModal, setAddToGroupModal] = useState(false);
   const [groupChatModal, setGroupChatModal] = useState(false);
+  const [documentDataModal, setDocumentDataModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -594,7 +596,16 @@ export const DocumentList = ({
                     onClick={() => handleShowText(selectedDocument)}
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    Показать исходник
+                    Исходник
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDocumentDataModal(true)}
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    Данные
                   </Button>
 
                   <div className="relative flex-1 max-w-md ml-auto">
@@ -657,6 +668,12 @@ export const DocumentList = ({
         onOpenChange={setGroupChatModal}
         groupName={selectedGroup?.name || ""}
         documentCount={filteredDocuments.length}
+      />
+
+      <DocumentDataModal
+        open={documentDataModal}
+        onOpenChange={setDocumentDataModal}
+        document={selectedDocument}
       />
     </>
   );
