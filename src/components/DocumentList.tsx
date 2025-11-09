@@ -7,7 +7,10 @@ import { CreateSimilarModal } from "./modals/CreateSimilarModal";
 import { AddToGroupModal } from "./modals/AddToGroupModal";
 import { GroupChatModal } from "./modals/GroupChatModal";
 import { DocumentDataModal } from "./modals/DocumentDataModal";
+import { CompareDocumentsModal } from "./modals/CompareDocumentsModal";
+import { TemplatesModal } from "./modals/TemplatesModal";
 import { Document } from "@/types/document";
+import { DocumentMetrics } from "@/types/document";
 import { Group } from "@/types/group";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -18,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Search, FolderPlus, MessageSquare, Folder, Trash2, FileText, Plus, 
-  Upload, Eye, Download, MoreVertical, X, Database
+  Upload, Eye, Download, MoreVertical, X, Database, GitCompare, FileStack
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -60,6 +63,8 @@ export const DocumentList = ({
   const [addToGroupModal, setAddToGroupModal] = useState(false);
   const [groupChatModal, setGroupChatModal] = useState(false);
   const [documentDataModal, setDocumentDataModal] = useState(false);
+  const [compareModal, setCompareModal] = useState(false);
+  const [templatesModal, setTemplatesModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
@@ -418,6 +423,17 @@ export const DocumentList = ({
                   Экспорт данных ({selectedDocumentIds.length})
                 </Button>
                 
+                {selectedDocumentIds.length >= 2 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCompareModal(true)}
+                  >
+                    <GitCompare className="h-4 w-4 mr-2" />
+                    Сравнить ({selectedDocumentIds.length})
+                  </Button>
+                )}
+                
                 {selectedGroupId && (
                   <Button
                     variant="outline"
@@ -441,6 +457,15 @@ export const DocumentList = ({
                 Чат по группе
               </Button>
             )}
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTemplatesModal(true)}
+            >
+              <FileStack className="h-4 w-4 mr-2" />
+              Шаблоны
+            </Button>
           </div>
         ) : selectedDocumentIds.length > 0 ? (
           <div className="bg-card border-y border-border px-6 py-3 flex items-center gap-2">
@@ -451,6 +476,26 @@ export const DocumentList = ({
             >
               <Download className="h-4 w-4 mr-2" />
               Экспорт данных ({selectedDocumentIds.length})
+            </Button>
+            
+            {selectedDocumentIds.length >= 2 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCompareModal(true)}
+              >
+                <GitCompare className="h-4 w-4 mr-2" />
+                Сравнить ({selectedDocumentIds.length})
+              </Button>
+            )}
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTemplatesModal(true)}
+            >
+              <FileStack className="h-4 w-4 mr-2" />
+              Шаблоны
             </Button>
           </div>
         ) : null}
@@ -766,6 +811,25 @@ export const DocumentList = ({
         onOpenChange={setDocumentDataModal}
         document={selectedDocument}
         onSave={updateDocumentMetrics}
+      />
+
+      <CompareDocumentsModal
+        open={compareModal}
+        onOpenChange={setCompareModal}
+        documents={filteredDocuments.filter((doc) =>
+          selectedDocumentIds.includes(doc.id)
+        )}
+      />
+
+      <TemplatesModal
+        open={templatesModal}
+        onOpenChange={setTemplatesModal}
+        sourceDocument={selectedDocument || undefined}
+        onApplyTemplate={(metrics) => {
+          if (selectedDocument) {
+            updateDocumentMetrics(selectedDocument.id, metrics);
+          }
+        }}
       />
     </>
   );

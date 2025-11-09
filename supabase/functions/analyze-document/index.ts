@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, documentName } = await req.json();
+    const { text, documentName, mode } = await req.json();
     
     if (!text) {
       return new Response(
@@ -25,20 +25,25 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Analyzing document:", documentName);
+    console.log("Analyzing document:", documentName, "Mode:", mode);
+    
+    let systemPrompt: string;
+    let userPrompt: string;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `Ты эксперт по анализу деловых документов. Проанализируй документ и извлеки ключевую информацию.
+    if (mode === "compare") {
+      systemPrompt = `Ты - эксперт по сравнению документов. Твоя задача - проанализировать различия и сходства между предоставленными документами.
+Предоставь детальный анализ, включающий:
+1. Основные различия в содержании
+2. Сходства и общие элементы
+3. Различия в суммах, датах, реквизитах
+4. Рекомендации и выводы
+5. Потенциальные проблемы или несоответствия
+
+Ответ должен быть на русском языке, структурированным и понятным.`;
+      
+      userPrompt = `Сравни следующие документы и предоставь подробный анализ:\n\n${text}`;
+    } else {
+      systemPrompt = `Ты эксперт по анализу деловых документов. Проанализируй документ и извлеки ключевую информацию.
 Верни ТОЛЬКО валидный JSON объект без дополнительного текста в следующем формате:
 {
   "documentType": "тип документа (договор, счёт, акт и т.д.)",
@@ -62,11 +67,27 @@ serve(async (req) => {
   "inn": "ИНН или null",
   "oktmo": "ОКТМО или null",
   "kpp": "КПП или null"
-}`
+}`;
+
+      userPrompt = `Проанализируй следующий документ и извлеки информацию:\n\n${text}`;
+    }
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
           },
           {
             role: "user",
-            content: `Проанализируй следующий документ и извлеки информацию:\n\n${text}`
+            content: userPrompt
           }
         ],
       }),
@@ -98,6 +119,14 @@ serve(async (req) => {
     }
 
     console.log("AI Response:", content);
+
+    if (mode === "compare") {
+      // For comparison mode, return the analysis as plain text
+      return new Response(
+        JSON.stringify({ analysis: content }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Extract JSON from response (handle markdown code blocks)
     let jsonStr = content.trim();
