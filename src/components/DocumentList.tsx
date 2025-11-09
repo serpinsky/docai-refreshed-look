@@ -9,6 +9,7 @@ import { GroupChatModal } from "./modals/GroupChatModal";
 import { DocumentDataModal } from "./modals/DocumentDataModal";
 import { CompareDocumentsModal } from "./modals/CompareDocumentsModal";
 import { TemplatesModal } from "./modals/TemplatesModal";
+import { VisualCompareModal } from "./modals/VisualCompareModal";
 import { Document } from "@/types/document";
 import { DocumentMetrics } from "@/types/document";
 import { Group } from "@/types/group";
@@ -64,6 +65,7 @@ export const DocumentList = ({
   const [groupChatModal, setGroupChatModal] = useState(false);
   const [documentDataModal, setDocumentDataModal] = useState(false);
   const [compareModal, setCompareModal] = useState(false);
+  const [visualCompareModal, setVisualCompareModal] = useState(false);
   const [templatesModal, setTemplatesModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
@@ -424,14 +426,26 @@ export const DocumentList = ({
                 </Button>
                 
                 {selectedDocumentIds.length >= 2 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCompareModal(true)}
-                  >
-                    <GitCompare className="h-4 w-4 mr-2" />
-                    Сравнить ({selectedDocumentIds.length})
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCompareModal(true)}
+                    >
+                      <GitCompare className="h-4 w-4 mr-2" />
+                      AI Сравнение
+                    </Button>
+                    {selectedDocumentIds.length === 2 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setVisualCompareModal(true)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Визуальное
+                      </Button>
+                    )}
+                  </>
                 )}
                 
                 {selectedGroupId && (
@@ -479,14 +493,26 @@ export const DocumentList = ({
             </Button>
             
             {selectedDocumentIds.length >= 2 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCompareModal(true)}
-              >
-                <GitCompare className="h-4 w-4 mr-2" />
-                Сравнить ({selectedDocumentIds.length})
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCompareModal(true)}
+                >
+                  <GitCompare className="h-4 w-4 mr-2" />
+                  AI Сравнение
+                </Button>
+                {selectedDocumentIds.length === 2 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setVisualCompareModal(true)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Визуальное
+                  </Button>
+                )}
+              </>
             )}
             
             <Button
@@ -819,6 +845,16 @@ export const DocumentList = ({
         documents={filteredDocuments.filter((doc) =>
           selectedDocumentIds.includes(doc.id)
         )}
+      />
+
+      <VisualCompareModal
+        open={visualCompareModal}
+        onOpenChange={setVisualCompareModal}
+        documents={
+          filteredDocuments.filter((doc) =>
+            selectedDocumentIds.includes(doc.id)
+          ).slice(0, 2) as [Document, Document]
+        }
       />
 
       <TemplatesModal

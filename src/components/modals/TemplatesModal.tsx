@@ -7,9 +7,10 @@ import { Document, DocumentMetrics } from "@/types/document";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
-import { Save, FileText, Download, Trash2, Plus } from "lucide-react";
+import { Save, FileText, Download, Trash2, Plus, Library, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { templateLibrary, getTemplatesByCategory, searchTemplates } from "@/lib/templateLibrary";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +52,8 @@ export const TemplatesModal = ({
     description: "",
   });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [librarySearch, setLibrarySearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const saveTemplates = (updatedTemplates: Template[]) => {
     localStorage.setItem("documentTemplates", JSON.stringify(updatedTemplates));
@@ -129,6 +132,42 @@ export const TemplatesModal = ({
     reader.readAsText(file);
   };
 
+  const handleApplyLibraryTemplate = (libraryTemplate: typeof templateLibrary[0]) => {
+    if (onApplyTemplate) {
+      onApplyTemplate(libraryTemplate.metrics);
+      toast.success(`Шаблон "${libraryTemplate.name}" применен`);
+      onOpenChange(false);
+    }
+  };
+
+  const handleSaveFromLibrary = (libraryTemplate: typeof templateLibrary[0]) => {
+    const template: Template = {
+      id: crypto.randomUUID(),
+      name: libraryTemplate.name,
+      description: libraryTemplate.description,
+      metrics: libraryTemplate.metrics,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updated = [...templates, template];
+    saveTemplates(updated);
+    toast.success(`Шаблон "${template.name}" добавлен в мои шаблоны`);
+  };
+
+  const getFilteredLibraryTemplates = () => {
+    let filtered = templateLibrary;
+    
+    if (selectedCategory !== "all") {
+      filtered = getTemplatesByCategory(selectedCategory);
+    }
+    
+    if (librarySearch.trim()) {
+      filtered = searchTemplates(librarySearch);
+    }
+    
+    return filtered;
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -137,8 +176,12 @@ export const TemplatesModal = ({
             <DialogTitle>Шаблоны документов</DialogTitle>
           </DialogHeader>
 
-          <Tabs defaultValue={sourceDocument ? "create" : "list"} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue="library" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="library">
+                <Library className="h-4 w-4 mr-2" />
+                Библиотека
+              </TabsTrigger>
               <TabsTrigger value="list">
                 <FileText className="h-4 w-4 mr-2" />
                 Мои шаблоны
@@ -146,10 +189,116 @@ export const TemplatesModal = ({
               {sourceDocument && (
                 <TabsTrigger value="create">
                   <Plus className="h-4 w-4 mr-2" />
-                  Создать шаблон
+                  Создать
                 </TabsTrigger>
               )}
             </TabsList>
+
+            <TabsContent value="library" className="space-y-4">
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Поиск шаблонов..."
+                    value={librarySearch}
+                    onChange={(e) => setLibrarySearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                <div className="flex gap-2 flex-wrap">
+                  <Badge
+                    variant={selectedCategory === "all" ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory("all")}
+                  >
+                    Все
+                  </Badge>
+                  <Badge
+                    variant={selectedCategory === "contract" ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory("contract")}
+                  >
+                    Договоры
+                  </Badge>
+                  <Badge
+                    variant={selectedCategory === "invoice" ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory("invoice")}
+                  >
+                    Счета
+                  </Badge>
+                  <Badge
+                    variant={selectedCategory === "act" ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory("act")}
+                  >
+                    Акты
+                  </Badge>
+                  <Badge
+                    variant={selectedCategory === "payment" ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedCategory("payment")}
+                  >
+                    Платежи
+                  </Badge>
+                </div>
+              </div>
+
+              <ScrollArea className="h-[450px] pr-4">
+                {getFilteredLibraryTemplates().length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Шаблоны не найдены
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {getFilteredLibraryTemplates().map((template) => (
+                      <div
+                        key={template.id}
+                        className="p-4 border border-border rounded-lg space-y-3 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1 flex-1">
+                            <div className="font-medium text-foreground">
+                              {template.name}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {template.description}
+                            </div>
+                            <div className="flex gap-1 flex-wrap mt-2">
+                              {template.tags.map((tag) => (
+                                <Badge key={tag} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          {onApplyTemplate && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleApplyLibraryTemplate(template)}
+                            >
+                              Применить
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSaveFromLibrary(template)}
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Сохранить в мои
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
 
             <TabsContent value="list" className="space-y-4">
               <div className="flex justify-end">
