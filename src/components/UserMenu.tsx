@@ -65,7 +65,7 @@ export const UserMenu = () => {
           <History className="mr-2 h-4 w-4" />
           История обработки
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate("/archive")}>
           <Archive className="mr-2 h-4 w-4" />
           Архив документов
         </DropdownMenuItem>

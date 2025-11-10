@@ -2,6 +2,7 @@ export type DocumentStatus = "recognized" | "error" | "uploaded" | "processing";
 
 export interface DocumentMetrics {
   documentType?: string;
+  category?: string;
   counterparties?: string[];
   amountWithVAT?: number;
   amountWithoutVAT?: number;
